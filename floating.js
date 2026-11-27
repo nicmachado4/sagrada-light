@@ -42,6 +42,7 @@ export function buildWindow(meta) {
         aspect = 0.5;
     }
     const blur = makeBlurredCanvas(tex, meta.kind === 'rose' ? 80 : 72, meta.kind === 'rose' ? 80 : 144);
+    const pool = makeBlurredCanvas(tex, meta.kind === 'rose' ? 320 : 256, meta.kind === 'rose' ? 320 : 512);
     const avg = averageColor(tex);
     const edges = edgeColors(tex);
     const bottom = vivid(edges[0], meta.prism ? 1.1 : 1.6, meta.prism ? 1.0 : 1.15);
@@ -84,7 +85,7 @@ export function buildWindow(meta) {
     rctx.fillStyle = fade;
     rctx.fillRect(0, 0, refl.width, refl.height);
 
-    return { meta, tex, lit, blur, refl, aspect, avg, bottom, glow };
+    return { meta, tex, lit, blur, pool, refl, aspect, avg, bottom, glow };
 }
 
 export function startFloating(canvas, opts = {}) {
