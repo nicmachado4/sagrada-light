@@ -1,9 +1,11 @@
-# The light inside Sagrada Família
+# Sagrada light
 
-Static build of the Sagrada Família light simulator: five stained-glass windows you can switch on and off, the colored light they throw as the sun moves over Barcelona, and the columns that catch it. Plus "Inside the light", the same day as a full-screen color field.
+The stained glass of Sagrada Familia, floating: one window at a time on a
+white ground, its light pooling below and its reflection fading under it.
+Swipe, drag, or use the arrow keys to move between the five windows.
 
-- `/` entry page
-- `/sim/` the room
-- `/field/` the color field
+Live at https://nicmachado4.github.io/sagrada-light/
 
-Built from the Instinct File "Sagrada Família light simulator". Auto-deploys to Vercel on push to main.
+Plain static files, no build step, no dependencies. `index.html` +
+`main.js` (scene) + `glass.js` (procedural Voronoi glass) + `floating.js`
+(renderer). Add to Home Screen opens it full screen.
