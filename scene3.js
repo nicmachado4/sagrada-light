@@ -9,9 +9,6 @@ import { makeRoseCanvas } from './glass.js';
 
 export const WINDOWS_META = [
     { key: 'passion', name: 'Passion', kind: 'bay', palette: 'warm', seed: 21 },
-    { key: 'nativity', name: 'Nativity', kind: 'bay', palette: 'cool', seed: 7 },
-    { key: 'apse', name: 'Apse', kind: 'bay', palette: 'apse', seed: 33 },
-    { key: 'whites', name: 'The sixteen whites', kind: 'bay', palette: 'whites', seed: 47 },
 ];
 
 const LIFT = 0.16;
@@ -108,7 +105,7 @@ void main() {
       float m = dot(tint, vec3(0.333));
       tint = clamp(mix(vec3(m), tint, 1.4) * 1.15 + 0.06, 0.0, 1.0);
       float reach = exp(-t * 0.35) * pow(inc, 0.55);
-            float k = smoothstep(0.0, 0.9, aSum) * reach * 1.0 * amp;
+            float k = smoothstep(0.0, 0.9, aSum) * reach * 1.5 * amp;
       tint = sweepColor(tint);
       col = mix(col, tint, k);
     }
@@ -331,8 +328,6 @@ export function startScene(canvas, opts = {}) {
             if (p >= 1) { trans = null; yaw += extra; extra = 0; scl = 1; amp = 1; }
         }
         const Y = yaw + sw + extra;
-        // Warm to cool follows the turn angle only, nothing else.
-        SW.value = 0.5 - 0.5 * Math.cos(0.9 * Y);
         group.rotation.y = Y;
         group.scale.setScalar(scl);
         group.position.y = LIFT + (1 - scl) * 0.5;
