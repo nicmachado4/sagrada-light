@@ -74,6 +74,24 @@ const PALETTES = {
 
 function pick(arr, rnd) { return hex(arr[Math.floor(rnd() * arr.length)]); }
 
+// Cheap blur that works everywhere: repeated halving with smoothing.
+function soften(src, pad, targetW) {
+    const w0 = Math.round(src.width * pad), h0 = Math.round(src.height * pad);
+    let c = document.createElement('canvas');
+    c.width = w0; c.height = h0;
+    const x = c.getContext('2d');
+    x.drawImage(src, (w0 - src.width) / 2, (h0 - src.height) / 2);
+    while (c.width > targetW) {
+        const n = document.createElement('canvas');
+        n.width = Math.max(2, Math.round(c.width / 2)); n.height = Math.max(2, Math.round(c.height / 2));
+        const nx = n.getContext('2d');
+        nx.imageSmoothingEnabled = true; nx.imageSmoothingQuality = 'high';
+        nx.drawImage(c, 0, 0, n.width, n.height);
+        c = n;
+    }
+    return c;
+}
+
 // ---- opening outlines, in bay units (x centered, y from 0 up) ----
 function lancetPts(x0, y0, w, h, n = 14) {
     const xc = x0 + w / 2;
@@ -132,7 +150,7 @@ function paintOpening(ctx, toPx, pts, opts) {
     // Seeds in a stretched space so shards run long in one direction.
     const seeds = [];
     const pad = rmax * 0.8;
-    for (let i = 0; i < 9000 && seeds.length < 260; i++) {
+    for (let i = 0; i < 20000 && seeds.length < (opts.maxSeeds || 260); i++) {
         const x = minx - pad + rnd() * (bw + pad * 2);
         const y = (miny - pad + rnd() * (bh + pad * 2)) / stretch;
         const r = rmin + (rmax - rmin) * Math.pow(rnd(), 2.1);
@@ -187,6 +205,18 @@ function paintOpening(ctx, toPx, pts, opts) {
         ctx.fillStyle = lg;
         ctx.fill();
 
+        ctx.save();
+        ctx.clip();
+        ctx.lineWidth = Math.max(1, lead * 0.6);
+        for (let n = 0; n < 4; n++) {
+            const a0 = rnd() * 6.28, rr0 = rr * (0.2 + rnd() * 0.8);
+            ctx.strokeStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.13)' : 'rgba(0,0,0,0.10)';
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(a0) * rr0, cy + Math.sin(a0) * rr0);
+            ctx.quadraticCurveTo(cx + (rnd() - 0.5) * rr, cy + (rnd() - 0.5) * rr, cx - Math.cos(a0) * rr0, cy - Math.sin(a0) * rr0);
+            ctx.stroke();
+        }
+        ctx.restore();
         ctx.lineJoin = 'round';
         ctx.strokeStyle = 'rgba(255,255,255,0.10)';
         ctx.lineWidth = lead * 2.4;
@@ -209,14 +239,6 @@ function paintOpening(ctx, toPx, pts, opts) {
     }
     ctx.restore();
 
-    // Lead came around the opening.
-    ctx.strokeStyle = '#100e0c';
-    ctx.lineWidth = lead * 5;
-    ctx.beginPath();
-    ctx.moveTo(px[0].x, px[0].y);
-    for (let i = 1; i < px.length; i++) ctx.lineTo(px[i].x, px[i].y);
-    ctx.closePath();
-    ctx.stroke();
 }
 
 function makeFlow(kind, rnd) {
@@ -259,7 +281,7 @@ export function buildBay(meta, makeRoseCanvas) {
         const ac = atlas.getContext('2d');
         ac.save();
         ac.beginPath(); ac.arc(size / 2, size / 2, size * 0.455, 0, Math.PI * 2); ac.clip();
-        const k = 0.455 / 0.48;
+        const k = 0.467 / 0.48;
         ac.drawImage(tex, size / 2 - size * k / 2, size / 2 - size * k / 2, size * k, size * k);
         ac.restore();
         const mask = document.createElement('canvas');
@@ -268,7 +290,7 @@ export function buildBay(meta, makeRoseCanvas) {
         mc.fillStyle = '#fff';
         mc.beginPath(); mc.arc(128, 128, 128, 0, Math.PI * 2); mc.fill();
         return {
-            kind: 'rose', aspect: 1, hw: 0.5, atlas, mask,
+            kind: 'rose', aspect: 1, hw: 0.5, atlas, mask, blur: soften(atlas, 1, 64), halo: soften(atlas, 1.4, 64), pad: 1.4,
             outer: circlePts(0, 0.5, 0.5, 64),
             holes: [circlePts(0, 0.5, 0.455, 64)],
             openings: [{ pts: circlePts(0, 0.5, 0.455, 48), color: [1, 0.62, 0.2] }],
@@ -276,17 +298,16 @@ export function buildBay(meta, makeRoseCanvas) {
         };
     }
 
-    const hw = 0.385;
-    const TOP = 1.02;
-    const W = Math.round(H * hw * 2 / TOP);
+    // Composition: a rose floating above three lancets. No wall, no trim.
+    const hw = 0.36;
+    const TOP = 1.5;
+    const HH = 1700;
+    const W = Math.round(HH * hw * 2 / TOP);
     const atlas = document.createElement('canvas');
-    atlas.width = W; atlas.height = H;
+    atlas.width = W; atlas.height = HH;
     const ctx = atlas.getContext('2d');
-    const S = H / TOP;
+    const S = HH / TOP;
     const toPx = (x, y) => ({ x: (x + hw) * S, y: (TOP - y) * S });
-
-    const lw = 0.205, gap = 0.035;
-    const startX = -(3 * lw + 2 * gap) / 2;
     const openings = [];
     const holes = [];
     const pal = PALETTES[meta.palette];
@@ -299,15 +320,26 @@ export function buildBay(meta, makeRoseCanvas) {
         paintOpening(ctx, toPx, pts, Object.assign({ rnd, pal, flow, lead }, extra));
     };
 
-    // Upper lancets, oculi, tiny circles, lower lancets.
-    const lancet = { stretch: 1.7, shear: 0.22, rmin: S * 0.018, rmax: S * 0.085, bars: 2 };
-    for (let i = 0; i < 3; i++) add(lancetPts(startX + i * (lw + gap), 0.55, lw, 0.43), 'lancet', lancet);
-    const oc = { stretch: 1.0, shear: 0, rmin: S * 0.012, rmax: S * 0.042, bars: 1 };
-    for (let i = 0; i < 3; i++) add(circlePts(startX + lw / 2 + i * (lw + gap), 0.455, 0.082), 'oculus', oc);
-    const tiny = { stretch: 1.0, shear: 0, rmin: S * 0.006, rmax: S * 0.012, bars: 0 };
-    add(circlePts(startX + lw + gap / 2, 0.455, 0.017, 20), 'oculus', tiny);
-    add(circlePts(startX + 2 * lw + gap * 1.5, 0.455, 0.017, 20), 'oculus', tiny);
-    for (let i = 0; i < 3; i++) add(lancetPts(startX + i * (lw + gap), 0.04, lw, 0.33), 'lancet', lancet);
+    // The rose: twelve petals around a pale heart.
+    const RC = [0, 1.14], R = 0.33;
+    const petal = { stretch: 1.4, shear: 0, rmin: S * 0.008, rmax: S * 0.022, bars: 0, maxSeeds: 220 };
+    for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2 + 0.13;
+        const pts = [];
+        for (let n = 0; n < 28; n++) {
+            const t = (n / 28) * Math.PI * 2;
+            const lx = R * 0.63 + Math.cos(t) * R * 0.37;
+            const ly = Math.sin(t) * R * 0.135;
+            pts.push([RC[0] + lx * Math.cos(a) - ly * Math.sin(a), RC[1] + lx * Math.sin(a) + ly * Math.cos(a)]);
+        }
+        add(pts, 'lancet', petal);
+    }
+    add(circlePts(RC[0], RC[1], R * 0.25, 40), 'oculus', { stretch: 1, shear: 0, rmin: S * 0.004, rmax: S * 0.011, bars: 0, maxSeeds: 120 });
+    // Three lancets below, fine leaded glass.
+    const lw = 0.17, gap = 0.05, lh = 0.66;
+    const startX = -(3 * lw + 2 * gap) / 2;
+    const lancet = { stretch: 2.0, shear: 0.2, rmin: S * 0.01, rmax: S * 0.03, bars: 1, maxSeeds: 420 };
+    for (let i = 0; i < 3; i++) add(lancetPts(startX + i * (lw + gap), 0.03, lw, lh), 'lancet', lancet);
 
     const outer = slabPts(hw, TOP, 0.07);
     // Stone mask (for the shadow the stone throws).
@@ -328,7 +360,7 @@ export function buildBay(meta, makeRoseCanvas) {
         for (const p of o.pts) { xs += p[0]; ys += p[1]; }
         const c = toPx(xs / o.pts.length, ys / o.pts.length);
         let r = 0, gg = 0, b = 0, n = 0;
-        for (let dy = -10; dy <= 10; dy += 5) for (let dx = -10; dx <= 10; dx += 5) {
+        for (let dy = -4; dy <= 4; dy += 4) for (let dx = -4; dx <= 4; dx += 4) {
             const i = (Math.round(c.y + dy) * W + Math.round(c.x + dx)) * 4;
             r += g[i]; gg += g[i + 1]; b += g[i + 2]; n++;
         }
@@ -337,5 +369,5 @@ export function buildBay(meta, makeRoseCanvas) {
         o.color = [sat(r / n), sat(gg / n), sat(b / n)];
     }
 
-    return { kind: 'bay', aspect: hw * 2, hw, atlas, mask, outer, holes, openings, top: TOP };
+    return { kind: 'bay', aspect: hw * 2, hw, atlas, mask, blur: soften(atlas, 1, 40), halo: soften(atlas, 1.4, 48), pad: 1.4, outer, holes, openings, top: TOP };
 }
