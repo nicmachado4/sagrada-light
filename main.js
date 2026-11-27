@@ -60,3 +60,19 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closePanel();
 });
+
+// Phone sheet: swipe down to close.
+let sy = null;
+panel.addEventListener('touchstart', (e) => { sy = e.touches[0].clientY; }, { passive: true });
+panel.addEventListener('touchmove', (e) => {
+    if (sy === null) return;
+    const dy = e.touches[0].clientY - sy;
+    if (dy > 0) panel.style.transform = 'translateY(' + dy + 'px)';
+}, { passive: true });
+panel.addEventListener('touchend', (e) => {
+    if (sy === null) return;
+    const dy = e.changedTouches[0].clientY - sy;
+    sy = null;
+    panel.style.transform = '';
+    if (dy > 50) closePanel();
+});
