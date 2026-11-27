@@ -211,7 +211,7 @@ function paintOpening(ctx, toPx, pts, opts) {
 
     // Lead came around the opening.
     ctx.strokeStyle = '#100e0c';
-    ctx.lineWidth = lead * 2.6;
+    ctx.lineWidth = lead * 5;
     ctx.beginPath();
     ctx.moveTo(px[0].x, px[0].y);
     for (let i = 1; i < px.length; i++) ctx.lineTo(px[i].x, px[i].y);
