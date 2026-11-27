@@ -44,10 +44,10 @@ function css(c, f = 1) {
 const PALETTES = {
     // Passion side: whites and yellows streaking through orange, red and pink.
     warm: {
-        streak: ['#fff7dc', '#fff1b0', '#ffe676', '#fffbe9'],
-        mid: ['#ffc93c', '#ffab22', '#ff9420', '#ffd24f'],
-        far: ['#ff5a1f', '#e8341f', '#d4202c', '#f4506a', '#ff7b3a', '#e9442a'],
-        accent: ['#2fb3c9', '#3a72d8', '#6cc47a'],
+        streak: ['#fff0a0', '#ffe874', '#fff7c8', '#ffdf5a'],
+        mid: ['#ffb326', '#ff9a1c', '#ffc72e', '#ff8a1e'],
+        far: ['#e8281c', '#d11524', '#ff5a1f', '#c40f2e', '#e8402a', '#b8123a', '#ff6a2a'],
+        accent: ['#1fa8c9', '#2f62d6', '#8a2fb0'],
     },
     // Nativity side: pale cyan streaks through turquoise, blue and green.
     cool: {
@@ -199,7 +199,7 @@ function paintOpening(ctx, toPx, pts, opts) {
         const cx = (mnx + mxx) / 2, cy = (mny + mxy) / 2;
         const rr = Math.max(mxx - mnx, mxy - mny) * 0.6 + 1;
         const lg = ctx.createLinearGradient(cx - Math.cos(ang) * rr, cy - Math.sin(ang) * rr, cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
-        lg.addColorStop(0, 'rgba(255,255,255,0.16)');
+        lg.addColorStop(0, 'rgba(255,255,255,0.08)');
         lg.addColorStop(0.55, 'rgba(255,255,255,0)');
         lg.addColorStop(1, 'rgba(0,0,0,0.20)');
         ctx.fillStyle = lg;
@@ -256,8 +256,8 @@ function makeFlow(kind, rnd) {
             const t = (y - (cy - bh / 2)) / bh;
             let d = 9;
             for (const s of streaks) d = Math.min(d, Math.abs((x - cx) / bw - (s.off + s.amp * Math.sin(t * s.f * 6.28 + s.ph))));
-            d += (r() - 0.5) * 0.14;
-            cls = d < 0.065 ? 0 : d < 0.17 ? 1 : 2;
+            d += (r() - 0.5) * 0.08;
+            cls = d < 0.05 ? 0 : d < 0.15 ? 1 : 2;
         }
         const u = r();
         if (u < 0.06) return pick(pal.accent, r);
