@@ -1,12 +1,12 @@
 {
-  "name": "The light inside Sagrada Família",
-  "short_name": "Sagrada Light",
+  "name": "Sagrada light",
+  "short_name": "Sagrada light",
   "start_url": "/sagrada-light/",
   "scope": "/sagrada-light/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0b0b10",
-  "theme_color": "#0b0b10",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/sagrada-light/icon-192.png",
