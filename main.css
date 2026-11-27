@@ -1,224 +1,142 @@
-:root{color-scheme:dark;--ds-page:#141317;--ds-ground:#0b0b10;--ds-text:#efece8;--ds-text-secondary:#b9b3ae;--ds-hairline:rgba(255,255,255,0.14)}
-html,body{margin:0;padding:0;background:var(--ds-ground);color:var(--ds-text);font-family:-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-text-size-adjust:100%}
-*{box-sizing:border-box}
-a{color:inherit}
-.file-button{display:inline-flex;align-items:center;justify-content:center;background:#efece8;color:#141317;text-decoration:none;border-radius:12px}
-/* ../src/style.css */
-.sag-enter {
-  display: flex;
-  margin: 4px 0 16px;
+@font-face {
+    font-family: 'Hint Serif';
+    src: url('hint.woff2') format('woff2');
+    font-style: italic;
+    font-weight: 500;
+    font-display: swap;
 }
-.sag-enter .file-button {
-  flex: 1;
-  height: 48px;
-  border-radius: 12px;
-  font-weight: 500;
-  font-size: 15px;
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #ffffff;
+    overflow: hidden;
+    overscroll-behavior: none;
 }
-.sag-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  overflow: hidden;
-  background: #0b0b10;
+
+#scene {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: pan-y;
+    cursor: grab;
 }
-.sag-back {
-  pointer-events: auto;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
+#scene:active { cursor: grabbing; }
+
+/* One soft hint, in a human voice, gone after the first move. */
+#hint {
+    position: fixed;
+    left: 50%;
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    font-family: 'Hint Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 17px;
+    letter-spacing: 0.02em;
+    color: rgba(60, 52, 44, 0.42);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.2s ease;
 }
-.sag-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  touch-action: none;
-  cursor: grab;
+#hint.show { opacity: 1; }
+#hint.gone { opacity: 0; transition: opacity 0.7s ease; }
+
+/* Position dots: only while switching, then they leave. */
+#dots {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    display: flex;
+    gap: 9px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
 }
-.sag-canvas:active {
-  cursor: grabbing;
+#dots.show { opacity: 1; }
+#dots i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(60, 52, 44, 0.22);
+    transition: background 0.3s ease, transform 0.3s ease;
 }
-.sag-fallback {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #d8d4d0;
-  padding: 24px;
-  text-align: center;
+#dots i.on {
+    background: rgba(60, 52, 44, 0.65);
+    transform: scale(1.25);
 }
-.sag-top {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  pointer-events: none;
+
+/* The one corner object. */
+#gear {
+    position: fixed;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(60, 52, 44, 0.14);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5px;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.35;
+    transition: opacity 0.3s ease;
 }
-.sag-chip {
-  background: rgba(12, 12, 18, 0.62);
-  color: #efece8;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
-  line-height: 18px;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+#gear:hover, #gear:focus-visible { opacity: 0.9; }
+#gear span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(60, 52, 44, 0.7);
 }
-.sag-chip-state {
-  color: #ffd9a8;
+
+/* Deeper options: a soft card over the piece. */
+#panel {
+    position: fixed;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    min-width: 178px;
+    border-radius: 16px;
+    border: 1px solid rgba(60, 52, 44, 0.1);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 40px rgba(60, 52, 44, 0.12);
+    padding: 10px 6px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    animation: panel-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
-.sag-controls {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 12px;
-  background: rgba(12, 12, 18, 0.66);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 16px;
-  padding: 12px 14px 10px;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  color: #efece8;
+@keyframes panel-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: none; }
 }
-.sag-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+#panel-list button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: none;
+    padding: 9px 14px;
+    font-size: 14px;
+    color: rgba(60, 52, 44, 0.8);
+    border-radius: 10px;
+    cursor: pointer;
 }
-.sag-time {
-  font-size: 22px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.sag-tz {
-  font-size: 12px;
-  color: #b9b3ae;
-}
-.sag-slider {
-  width: 100%;
-  margin: 8px 0 4px;
-  height: 32px;
-  accent-color: #73a89a;
-  cursor: pointer;
-}
-.sag-buttons {
-  display: flex;
-  gap: 8px;
-}
-.sag-btn {
-  flex: 1;
-  min-height: 44px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.08);
-  color: #efece8;
-  font-size: 14px;
-  cursor: pointer;
-}
-.sag-btn:active {
-  background: rgba(255, 255, 255, 0.18);
-}
-.sag-btn.is-on {
-  background: rgba(115, 168, 154, 0.35);
-  border-color: rgba(115, 168, 154, 0.8);
-}
-.sag-hint {
-  margin-top: 8px;
-  text-align: center;
-  font-size: 11px;
-  color: #9a948f;
-}
-@media (max-width: 767px) {
-  .sag-top {
-    position: static;
-    padding: 12px 12px 0;
-  }
-  .sag-controls {
-    position: static;
-    margin: 10px 12px 0;
-    bottom: auto;
-  }
-}
-.sag-veil {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0b0b10;
-  opacity: 1;
-  transition: opacity 1.2s ease;
-  pointer-events: none;
-}
-.sag-veil.is-off {
-  opacity: 0;
-}
-.sag-veil-text {
-  color: #8f8a85;
-  font-size: 13px;
-  letter-spacing: 0.12em;
-}
-.sag-enter {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 4px 0 12px;
-}
-.sag-enter .file-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  border-radius: 12px;
-  font-weight: 500;
-  font-size: 15px;
-}
-.sag-enter-note {
-  margin: 0 2px;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--ds-text-secondary, #6b6660);
-}
-.sag-wins {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-.sag-win {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 4px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.05);
-  color: #8f8a85;
-  font-size: 12.5px;
-  cursor: pointer;
-}
-.sag-win-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  opacity: 0.35;
-}
-.sag-win.is-on {
-  color: #f2eee9;
-  border-color: rgba(255, 255, 255, 0.38);
-  background: rgba(255, 255, 255, 0.12);
-}
-.sag-win.is-on .sag-win-dot {
-  opacity: 1;
-  box-shadow: 0 0 8px 1px currentColor;
+#panel-list button:hover, #panel-list button:focus-visible { background: rgba(60, 52, 44, 0.06); }
+#panel-list button.on { color: #1d1812; font-weight: 600; }
+#panel-note {
+    margin: 6px 14px 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(60, 52, 44, 0.08);
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: rgba(60, 52, 44, 0.5);
 }
