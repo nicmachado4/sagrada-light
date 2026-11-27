@@ -26,16 +26,24 @@ void main() {
   vN = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));
   gl_Position = projectionMatrix * viewMatrix * w;
 }`;
+const SWEEP_FN = `
+uniform float uSweep;
+vec3 sweepColor(vec3 c) {
+  vec3 cool = vec3(c.b * 0.85, c.g * 0.95 + c.r * 0.08, c.r * 0.6 + c.b * 0.55 + 0.04);
+  return mix(c, clamp(cool, 0.0, 1.0), uSweep);
+}`;
+const SW = { value: 0 };
 const GLASS_FS = `
 uniform sampler2D atlas; uniform vec3 L; uniform vec3 camPos; uniform vec3 uvm;
 varying vec2 vUv; varying vec3 vN; varying vec3 vW;
+${SWEEP_FN}
 void main() {
   vec4 t = texture2D(atlas, vUv);
   if (t.a < 0.5) discard;
   vec3 N = normalize(vN);
   vec3 V = normalize(camPos - vW);
   float inc = abs(dot(N, L));
-  vec3 c = t.rgb;
+  vec3 c = sweepColor(t.rgb);
   float lum = dot(c, vec3(0.3, 0.59, 0.11));
   // Back-lit: glass glows more when the beam goes through square on.
   vec3 col = c * (0.95 + 0.35 * inc) + c * c * 0.3 * inc;
@@ -58,6 +66,7 @@ void main() {
 }`;
 const FLOOR_FS = `
 uniform sampler2D atlas; uniform sampler2D mask;
+${SWEEP_FN}
 uniform vec3 L; uniform float yaw; uniform float lift; uniform vec3 uvm; uniform float amp;
 varying vec3 vP;
 vec2 toUv(vec3 X, float c, float s) {
@@ -100,6 +109,7 @@ void main() {
       tint = clamp(mix(vec3(m), tint, 1.4) * 1.15 + 0.06, 0.0, 1.0);
       float reach = exp(-t * 0.35) * pow(inc, 0.55);
             float k = smoothstep(0.0, 0.9, aSum) * reach * 1.0 * amp;
+      tint = sweepColor(tint);
       col = mix(col, tint, k);
     }
   }
@@ -122,11 +132,12 @@ void main() {
 const BEAM_FS = `
 uniform float amp; uniform float yaw; uniform vec3 L;
 varying vec3 vC; varying float vE;
+${SWEEP_FN}
 void main() {
   vec3 nw = vec3(sin(yaw), 0.0, cos(yaw));
   float inc = pow(abs(dot(nw, L)), 0.7);
   float a = 0.07 * (1.0 - 0.75 * vE) * inc * amp;
-  gl_FragColor = vec4(vC, a);
+  gl_FragColor = vec4(sweepColor(vC), a);
 }`;
 
 function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
@@ -156,7 +167,7 @@ export function startScene(canvas, opts = {}) {
         uniforms: {
             atlas: { value: null }, mask: { value: null },
             L: { value: LDIR.clone() }, yaw: { value: 0 }, lift: { value: LIFT },
-            uvm: { value: new THREE.Vector3(1, 0.5, 1) }, amp: { value: 1 },
+            uvm: { value: new THREE.Vector3(1, 0.5, 1) }, amp: { value: 1 }, uSweep: SW,
         },
     });
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), floorMat);
@@ -170,7 +181,7 @@ export function startScene(canvas, opts = {}) {
     const beamMat = new THREE.ShaderMaterial({
         vertexShader: BEAM_VS, fragmentShader: BEAM_FS,
         transparent: true, depthWrite: false, side: THREE.DoubleSide,
-        uniforms: { yaw: { value: 0 }, lift: { value: LIFT }, L: { value: LDIR.clone() }, amp: { value: 1 } },
+        uniforms: { yaw: { value: 0 }, lift: { value: LIFT }, L: { value: LDIR.clone() }, amp: { value: 1 }, uSweep: SW },
     });
     const beam = new THREE.Mesh(new THREE.BufferGeometry(), beamMat);
     beam.frustumCulled = false;
@@ -179,7 +190,7 @@ export function startScene(canvas, opts = {}) {
 
     const glassMat = new THREE.ShaderMaterial({
         vertexShader: GLASS_VS, fragmentShader: GLASS_FS, side: THREE.DoubleSide,
-        uniforms: { atlas: { value: null }, L: { value: LDIR.clone() }, camPos: { value: camera.position }, uvm: { value: new THREE.Vector3(1, 0.5, 1) } },
+        uniforms: { atlas: { value: null }, L: { value: LDIR.clone() }, camPos: { value: camera.position }, uvm: { value: new THREE.Vector3(1, 0.5, 1) }, uSweep: SW },
     });
     const capMat = new THREE.MeshBasicMaterial({ visible: false });
     const rimMat = new THREE.MeshLambertMaterial({ color: 0x1a1612 });
@@ -320,6 +331,8 @@ export function startScene(canvas, opts = {}) {
             if (p >= 1) { trans = null; yaw += extra; extra = 0; scl = 1; amp = 1; }
         }
         const Y = yaw + sw + extra;
+        // Warm to cool follows the turn angle only, nothing else.
+        SW.value = 0.5 - 0.5 * Math.cos(0.9 * Y);
         group.rotation.y = Y;
         group.scale.setScalar(scl);
         group.position.y = LIFT + (1 - scl) * 0.5;
