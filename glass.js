@@ -89,14 +89,14 @@ function cellColor(t, rnd, palette) {
     return band[Math.floor(rnd() * band.length)];
 }
 
-// Tall arched window of leaded shards.
+// Tall arched window of leaded shards: irregular, many sizes, translucent.
 export function makeGlassCanvas(w = 512, h = 1024, seed = 7, palette = 'cool', opts = {}) {
-    const { cols = 13, rows = 26 } = opts;
     const rnd = mulberry(seed);
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext('2d');
+    const K = w / 512;
 
     ctx.clearRect(0, 0, w, h);
     ctx.save();
@@ -110,57 +110,82 @@ export function makeGlassCanvas(w = 512, h = 1024, seed = 7, palette = 'cool', o
     ctx.closePath();
     ctx.clip();
 
-    const cw = w / cols;
-    const ch = h / rows;
-    const seeds = [];
-    for (let r = 0; r < rows; r++) {
-        const row = [];
-        for (let c = 0; c < cols; c++) {
-            row.push({
-                x: (c + 0.5 + (rnd() - 0.5) * 0.85) * cw,
-                y: (r + 0.5 + (rnd() - 0.5) * 0.85) * ch,
-            });
+    // Seeds with very different spacing: a few big shards, many small ones.
+    const pts = [];
+    for (let i = 0; i < 14000 && pts.length < 420; i++) {
+        const x = (rnd() * 1.1 - 0.05) * w;
+        const y = (rnd() * 1.1 - 0.05) * h;
+        const r = (11 + 58 * Math.pow(rnd(), 2.3)) * K;
+        let ok = true;
+        for (const p of pts) {
+            if (Math.hypot(p.x - x, p.y - y) < (p.r + r) * 0.6) { ok = false; break; }
         }
-        seeds.push(row);
+        if (ok) pts.push({ x, y, r });
     }
 
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            const s = seeds[r][c];
-            let poly = [
-                { x: s.x - cw * 1.2, y: s.y - ch * 1.2 },
-                { x: s.x + cw * 1.2, y: s.y - ch * 1.2 },
-                { x: s.x + cw * 1.2, y: s.y + ch * 1.2 },
-                { x: s.x - cw * 1.2, y: s.y + ch * 1.2 },
-            ];
-            for (let rr = Math.max(0, r - 2); rr <= Math.min(rows - 1, r + 2); rr++) {
-                for (let cc = Math.max(0, c - 2); cc <= Math.min(cols - 1, c + 2); cc++) {
-                    if (rr === r && cc === c) continue;
-                    poly = clipPoly(poly, s, seeds[rr][cc]);
-                }
-            }
-            if (poly.length < 3) continue;
-            const lum = 0.78 + rnd() * 0.62;
-            const base = cellColor(s.y / h, rnd, palette);
-            const pts = poly.map((p) => ({ x: p.x + (rnd() - 0.5) * 3.2, y: p.y + (rnd() - 0.5) * 3.2 }));
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-            ctx.closePath();
-            ctx.fillStyle = base.startsWith('#') ? shade(base, lum) : base;
-            ctx.fill();
-            const grad = ctx.createRadialGradient(s.x, s.y, 1, s.x, s.y, cw * 0.95);
-            grad.addColorStop(0, 'rgba(255,255,255,0.12)');
-            grad.addColorStop(0.7, 'rgba(255,255,255,0.02)');
-            grad.addColorStop(1, 'rgba(0,0,0,0.22)');
-            ctx.fillStyle = grad;
-            ctx.fill();
+    const field = (x, y) => Math.sin(x * 0.013 + seed) * Math.sin(y * 0.0085 + seed * 2) * 0.16;
+    for (let i = 0; i < pts.length; i++) {
+        const s = pts[i];
+        const R = s.r * 2.4 + 60 * K;
+        let poly = [
+            { x: s.x - R, y: s.y - R }, { x: s.x + R, y: s.y - R },
+            { x: s.x + R, y: s.y + R }, { x: s.x - R, y: s.y + R },
+        ];
+        for (let j = 0; j < pts.length; j++) {
+            if (j === i) continue;
+            const o = pts[j];
+            if (Math.abs(o.x - s.x) > R * 2 || Math.abs(o.y - s.y) > R * 2) continue;
+            poly = clipPoly(poly, s, o);
+            if (poly.length < 3) break;
         }
+        if (poly.length < 3) continue;
+        // Shards are angular: nudge corners a little, keep neighbors in step.
+        const jit = (p) => {
+            const hx = Math.sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453;
+            const hy = Math.sin(p.x * 39.346 + p.y * 11.135) * 24634.6345;
+            return { x: p.x + ((hx - Math.floor(hx)) - 0.5) * 2.2 * K, y: p.y + ((hy - Math.floor(hy)) - 0.5) * 2.2 * K };
+        };
+        const q = poly.map(jit);
+
+        const cream = rnd() < (palette === 'whites' ? 0.0 : 0.12);
+        let base;
+        if (cream) base = ['#f7f1df', '#fbf6ea', '#f3ead3'][Math.floor(rnd() * 3)];
+        else base = cellColor(Math.max(0, Math.min(1, s.y / h + field(s.x, s.y) + (rnd() - 0.5) * 0.12)), rnd, palette);
+        const lum = cream ? 0.96 + rnd() * 0.08 : 0.86 + rnd() * 0.46;
+
+        let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+        for (const p of q) { minx = Math.min(minx, p.x); miny = Math.min(miny, p.y); maxx = Math.max(maxx, p.x); maxy = Math.max(maxy, p.y); }
+        ctx.beginPath();
+        ctx.moveTo(q[0].x, q[0].y);
+        for (let k = 1; k < q.length; k++) ctx.lineTo(q[k].x, q[k].y);
+        ctx.closePath();
+        ctx.fillStyle = base.startsWith('#') ? shade(base, lum) : base;
+        ctx.fill();
+
+        // Translucency: a bright side where light comes in, a deeper far side.
+        const ang = rnd() * Math.PI * 2;
+        const cx = (minx + maxx) / 2, cy = (miny + maxy) / 2;
+        const rr = Math.max(maxx - minx, maxy - miny) * 0.6 + 1;
+        const lg = ctx.createLinearGradient(cx - Math.cos(ang) * rr, cy - Math.sin(ang) * rr, cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr);
+        lg.addColorStop(0, cream ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.26)');
+        lg.addColorStop(0.55, 'rgba(255,255,255,0)');
+        lg.addColorStop(1, 'rgba(0,0,0,0.18)');
+        ctx.fillStyle = lg;
+        ctx.fill();
+
+        // Glass edge: a bright bevel just inside the lead, then the lead itself.
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+        ctx.lineWidth = 4.2 * K;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(22,19,17,0.92)';
+        ctx.lineWidth = 2.0 * K;
+        ctx.stroke();
     }
 
-    // Mullions.
-    ctx.strokeStyle = 'rgba(12,12,14,0.9)';
-    ctx.lineWidth = Math.max(4, w * 0.016);
+    // Mullions: thinner than before.
+    ctx.strokeStyle = 'rgba(14,13,14,0.92)';
+    ctx.lineWidth = Math.max(3, w * 0.011);
     ctx.beginPath();
     ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
     ctx.moveTo(0, h * 0.42); ctx.lineTo(w, h * 0.42);
@@ -170,7 +195,7 @@ export function makeGlassCanvas(w = 512, h = 1024, seed = 7, palette = 'cool', o
 
     // Outer lead rim.
     ctx.strokeStyle = '#0c0b0a';
-    ctx.lineWidth = Math.max(6, w * 0.02);
+    ctx.lineWidth = Math.max(5, w * 0.016);
     ctx.beginPath();
     ctx.moveTo(0, h);
     ctx.lineTo(0, archY);
