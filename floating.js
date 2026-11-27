@@ -135,15 +135,16 @@ export function startFloating(canvas, opts = {}) {
         // The window floats centered, a touch above the middle. In a framed
         // host (the File viewer's header eats the top), raise and shrink it.
         const compact = !!opts.compact;
+        const wide = W / H > 1.15; // desktop-shaped viewport: let the window breathe
         let h;
         if (win.meta.kind === 'rose') {
-            h = Math.min(H * (compact ? 0.40 : 0.52), W * 0.86);
+            h = Math.min(H * (compact ? 0.40 : wide ? 0.58 : 0.52), W * 0.86);
         } else {
-            h = Math.min(H * (compact ? 0.48 : 0.60), W * 1.7);
+            h = Math.min(H * (compact ? 0.48 : wide ? 0.68 : 0.60), W * 1.7);
         }
         const w = h * win.aspect;
         const x = (W - w) / 2;
-        const y = H * (compact ? 0.42 : 0.5) - h * 0.56;
+        const y = H * (compact ? 0.42 : wide ? 0.45 : 0.5) - h * 0.56;
         return { x, y, w, h };
     }
 
