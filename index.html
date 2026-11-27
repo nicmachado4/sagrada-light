@@ -1,22 +1,37 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0b10">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Sagrada Light">
-<title>The light inside Sagrada Família</title>
-<meta name="description" content="Five stained-glass windows, the light they throw as the sun moves over Barcelona, and a full-screen color field. Driven by the real sun and live weather.">
-<base href="/sagrada-light/"><link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon-192.png" type="image/png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="main.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Sagrada light</title>
+<meta name="description" content="The stained glass of Sagrada Familia, floating. One window at a time, its light and its reflection." />
+<meta name="theme-color" content="#ffffff" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Sagrada light" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="stylesheet" href="main.css" />
 </head>
 <body>
-<div id="root"></div>
-<script src="main.js"></script>
+<canvas id="scene" aria-label="A stained-glass window of Sagrada Familia floating on white. Swipe or use the arrow keys to change windows."></canvas>
+
+<div id="hint" aria-hidden="true">drag to turn</div>
+
+<div id="dots" aria-hidden="true"></div>
+
+<button id="gear" type="button" aria-label="Window settings">
+    <span></span><span></span><span></span>
+</button>
+
+<div id="panel" role="dialog" aria-label="Windows" hidden>
+    <div id="panel-list" role="listbox" aria-label="Choose a window"></div>
+    <div id="panel-note">The windows of Sagrada Familia, one at a time. Swipe to move between them.</div>
+</div>
+
+<script type="module" src="main.js"></script>
 </body>
 </html>
