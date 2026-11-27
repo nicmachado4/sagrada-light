@@ -100,8 +100,7 @@ void main() {
       float m = dot(tint, vec3(0.333));
       tint = clamp(mix(vec3(m), tint, 1.35) * 1.12, 0.0, 1.0);
       float reach = exp(-t * 0.30) * pow(inc, 0.55);
-      col *= 1.0 - 0.05 * max(stone - aSum, 0.0) * reach * amp;
-      float k = clamp(aSum * 1.0, 0.0, 1.0) * reach * 0.97 * amp;
+            float k = clamp(aSum * 1.0, 0.0, 1.0) * reach * 0.97 * amp;
       col = mix(col, tint, k);
     }
   }
@@ -183,7 +182,8 @@ export function startScene(canvas, opts = {}) {
         vertexShader: GLASS_VS, fragmentShader: GLASS_FS, side: THREE.DoubleSide,
         uniforms: { atlas: { value: null }, L: { value: LDIR.clone() }, camPos: { value: camera.position }, uvm: { value: new THREE.Vector3(1, 0.5, 1) } },
     });
-    const stoneMat = new THREE.MeshLambertMaterial({ color: 0xf1ebdf });
+    const capMat = new THREE.MeshBasicMaterial({ visible: false });
+    const rimMat = new THREE.MeshLambertMaterial({ color: 0x1a1612 });
 
     const maxAniso = renderer.capabilities.getMaxAnisotropy();
     const wins = WINDOWS_META.map((meta) => {
@@ -201,10 +201,6 @@ export function startScene(canvas, opts = {}) {
 
         const toShape = (pts) => new THREE.Shape(pts.map((p) => new THREE.Vector2(p[0], p[1])));
         const outerShape = toShape(bay.outer);
-        const stoneShape = toShape(bay.outer);
-        stoneShape.holes = bay.holes.map((h) => new THREE.Path(h.map((p) => new THREE.Vector2(p[0], p[1]))));
-        const stoneGeo = new THREE.ExtrudeGeometry(stoneShape, { depth: 0.07, bevelEnabled: false, curveSegments: 1 });
-        stoneGeo.translate(0, 0, -0.035);
         const glassGeo = new THREE.ShapeGeometry(outerShape, 1);
         const pos = glassGeo.attributes.position;
         const uv = glassGeo.attributes.uv;
@@ -225,7 +221,14 @@ export function startScene(canvas, opts = {}) {
         bg.setAttribute('col', new THREE.Float32BufferAttribute(C, 3));
         bg.setAttribute('endv', new THREE.Float32BufferAttribute(E, 1));
 
-        const stone = new THREE.Mesh(stoneGeo, stoneMat);
+        // No wall: only a thin dark lead rim around each opening.
+        const stone = new THREE.Group();
+        for (const h of bay.holes) {
+            const sh = toShape(h);
+            const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.03, bevelEnabled: false, curveSegments: 1 });
+            geo.translate(0, 0, -0.015);
+            stone.add(new THREE.Mesh(geo, [capMat, rimMat]));
+        }
         const glass = new THREE.Mesh(glassGeo, glassMat.clone());
         glass.material.uniforms.atlas = { value: atlasTex };
         glass.material.uniforms.uvm = { value: uvm };
