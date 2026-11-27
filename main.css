@@ -26,24 +26,6 @@ html, body {
 }
 #scene:active { cursor: grabbing; }
 
-/* One soft hint, in a human voice, gone after the first move. */
-#hint {
-    position: fixed;
-    left: 50%;
-    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    font-family: 'Hint Serif', Georgia, serif;
-    font-style: italic;
-    font-size: 17px;
-    letter-spacing: 0.02em;
-    color: rgba(60, 52, 44, 0.42);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 1.2s ease;
-}
-#hint.show { opacity: 1; }
-#hint.gone { opacity: 0; transition: opacity 0.7s ease; }
-
 /* Position dots: only while switching, then they leave. */
 #dots {
     position: fixed;
@@ -69,41 +51,54 @@ html, body {
     transform: scale(1.25);
 }
 
-/* The one corner object. */
+/* The one corner control: a plain, readable button. */
 #gear {
     position: fixed;
-    right: calc(16px + env(safe-area-inset-right, 0px));
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: 1px solid rgba(60, 52, 44, 0.14);
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    right: calc(20px + env(safe-area-inset-right, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    height: 38px;
+    padding: 0 16px 0 13px;
+    border-radius: 19px;
+    border: 1px solid rgba(60, 52, 44, 0.16);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 2.5px;
-    padding: 0;
+    gap: 9px;
     cursor: pointer;
-    opacity: 0.35;
-    transition: opacity 0.3s ease;
+    color: rgba(60, 52, 44, 0.78);
+    font-family: 'Hint Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
-#gear:hover, #gear:focus-visible { opacity: 0.9; }
-#gear span {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: rgba(60, 52, 44, 0.7);
+#gear em { font-style: italic; }
+#gear:hover, #gear:focus-visible, #gear[aria-expanded="true"] {
+    background: #fff;
+    border-color: rgba(60, 52, 44, 0.32);
+    color: #1d1812;
+    outline: none;
+}
+#gear .gi {
+    display: grid;
+    grid-template-columns: 5px 5px;
+    gap: 3px;
+}
+#gear .gi b {
+    width: 5px;
+    height: 5px;
+    border-radius: 1.5px;
+    background: currentColor;
 }
 
 /* Deeper options: a soft card over the piece. */
 #panel {
     position: fixed;
-    right: calc(16px + env(safe-area-inset-right, 0px));
-    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-    min-width: 178px;
+    right: calc(20px + env(safe-area-inset-right, 0px));
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    min-width: 190px;
     border-radius: 16px;
     border: 1px solid rgba(60, 52, 44, 0.1);
     background: rgba(255, 255, 255, 0.82);
