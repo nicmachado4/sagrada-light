@@ -111,11 +111,11 @@ function paintTraced(ctx, toPx, pts, tr, map, lead, rnd) {
     for (let i = 1; i < px.length; i++) ctx.lineTo(px[i].x, px[i].y);
     ctx.closePath();
     ctx.clip();
-    ctx.fillStyle = '#1c1816';
+    ctx.fillStyle = '#c4501f';
     ctx.fill();
     ctx.lineJoin = 'round';
     for (const pc of tr) {
-        const q = pc.p.map((p) => { const w = map(p[0] / 1000, p[1] / 1000); return toPx(w[0], w[1]); });
+        const q = pc.p.map((p) => { const w = map((p[0] / 1000 - 0.5) * 1.1 + 0.5, (p[1] / 1000 - 0.5) * 1.1 + 0.5); return toPx(w[0], w[1]); });
         const col = enhance(hex('#' + pc.c));
         const lum = 0.95 + rnd() * 0.1;
         ctx.beginPath();
