@@ -15982,7 +15982,7 @@ void main(){
     return [weather, weatherFailed, true];
   }
   function weatherChipText(weather, weatherFailed, weatherOn) {
-    return weather ? `Barcelona \xB7 ${weather.temp}\xB0 \xB7 ${weather.label}${weatherOn ? "" : " \xB7 off"}` : weatherFailed ? "Barcelona weather unavailable \xB7 clear sky assumed" : "Barcelona weather \xB7 fetching\u2026";
+    return weather ? `Barcelona \xB7 ${weather.temp}\xB0 \xB7 ${weather.label}${weatherOn ? "" : " \xB7 off"}` : weatherFailed ? "Weather unavailable \xB7 clear sky assumed" : "Barcelona weather \xB7 fetching\u2026";
   }
   var WIN_CHIPS = [
     { key: "nativity", name: "Nativity", color: "#3f7fc4" },

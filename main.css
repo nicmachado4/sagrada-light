@@ -137,9 +137,14 @@ a{color:inherit}
   color: #9a948f;
 }
 @media (max-width: 767px) {
+  .sag-top {
+    position: static;
+    padding: 12px 12px 0;
+  }
   .sag-controls {
+    position: static;
+    margin: 10px 12px 0;
     bottom: auto;
-    top: 104px;
   }
 }
 .sag-veil {
