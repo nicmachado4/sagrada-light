@@ -135,3 +135,51 @@ html, body {
     line-height: 1.45;
     color: rgba(60, 52, 44, 0.5);
 }
+
+/* Phone: icon-only button, the card becomes a bottom sheet. */
+@media (max-width: 600px) {
+    #gear {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border-radius: 50%;
+        justify-content: center;
+    }
+    #gear em {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+    #panel {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        min-width: 0;
+        border-radius: 22px 22px 0 0;
+        border-width: 1px 0 0 0;
+        padding: 18px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+        box-shadow: 0 -12px 40px rgba(60, 52, 44, 0.12);
+        animation: sheet-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+        touch-action: none;
+    }
+    #panel::before {
+        content: '';
+        position: absolute;
+        top: 7px;
+        left: 50%;
+        width: 36px;
+        height: 4px;
+        margin-left: -18px;
+        border-radius: 2px;
+        background: rgba(60, 52, 44, 0.18);
+    }
+    #panel-list button { padding: 13px 16px; font-size: 16px; }
+    #panel-note { display: none; }
+}
+@keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+}
