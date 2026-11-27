@@ -11,12 +11,11 @@ export const WINDOWS_META = [
     { key: 'passion', name: 'Passion', kind: 'bay', palette: 'warm', seed: 21 },
     { key: 'nativity', name: 'Nativity', kind: 'bay', palette: 'cool', seed: 7 },
     { key: 'apse', name: 'Apse', kind: 'bay', palette: 'apse', seed: 33 },
-    { key: 'rose', name: 'Resurrection rose', kind: 'rose', palette: 'warm', seed: 51 },
     { key: 'whites', name: 'The sixteen whites', kind: 'bay', palette: 'whites', seed: 47 },
 ];
 
 const LIFT = 0.16;
-const LDIR = new THREE.Vector3(-0.32, -0.78, 0.56).normalize();
+const LDIR = new THREE.Vector3(-0.3, -0.9, 0.42).normalize();
 
 const GLASS_VS = `
 varying vec2 vUv; varying vec3 vN; varying vec3 vW;
@@ -39,7 +38,7 @@ void main() {
   vec3 c = t.rgb;
   float lum = dot(c, vec3(0.3, 0.59, 0.11));
   // Back-lit: glass glows more when the beam goes through square on.
-  vec3 col = c * (0.92 + 0.5 * inc) + c * c * 0.35 * inc;
+  vec3 col = c * (0.95 + 0.35 * inc) + c * c * 0.3 * inc;
   col += vec3(1.0, 0.97, 0.9) * 0.10 * inc * smoothstep(0.35, 0.9, lum);
   // Glint where the pane catches the beam's direction.
   vec3 H = normalize(-L * sign(dot(N, V)) + V);
@@ -76,8 +75,8 @@ void main() {
     if (t > 0.0) {
       vec3 X = vP - L * t;
       float inc = abs(dn);
-      float soft = 0.0015 + 0.0045 * t;
-      float ca = 0.0035 * t;
+      float soft = 0.008 + 0.022 * t;
+      float ca = 0.012 * t;
       vec3 sum = vec3(0.0); float aSum = 0.0; float stone = 0.0;
       for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
@@ -98,9 +97,9 @@ void main() {
       aSum /= 9.0; stone /= 9.0;
       vec3 tint = sum / max(aSum * 9.0, 0.001);
       float m = dot(tint, vec3(0.333));
-      tint = clamp(mix(vec3(m), tint, 1.35) * 1.12, 0.0, 1.0);
-      float reach = exp(-t * 0.30) * pow(inc, 0.55);
-            float k = clamp(aSum * 1.0, 0.0, 1.0) * reach * 0.97 * amp;
+      tint = clamp(mix(vec3(m), tint, 1.4) * 1.15 + 0.06, 0.0, 1.0);
+      float reach = exp(-t * 0.35) * pow(inc, 0.55);
+            float k = smoothstep(0.0, 0.9, aSum) * reach * 1.0 * amp;
       col = mix(col, tint, k);
     }
   }
@@ -126,7 +125,7 @@ varying vec3 vC; varying float vE;
 void main() {
   vec3 nw = vec3(sin(yaw), 0.0, cos(yaw));
   float inc = pow(abs(dot(nw, L)), 0.7);
-  float a = 0.16 * (1.0 - 0.6 * vE) * inc * amp;
+  float a = 0.07 * (1.0 - 0.75 * vE) * inc * amp;
   gl_FragColor = vec4(vC, a);
 }`;
 
@@ -194,6 +193,8 @@ export function startScene(canvas, opts = {}) {
         atlasTex.minFilter = THREE.LinearMipmapLinearFilter;
         atlasTex.wrapS = atlasTex.wrapT = THREE.ClampToEdgeWrapping;
         const maskTex = new THREE.CanvasTexture(bay.mask);
+        const blurTex = new THREE.CanvasTexture(bay.blur);
+        blurTex.wrapS = blurTex.wrapT = THREE.ClampToEdgeWrapping;
         maskTex.wrapS = maskTex.wrapT = THREE.ClampToEdgeWrapping;
         const sx = 1 / (bay.hw * 2);
         const sy = 1 / bay.top;
@@ -210,10 +211,17 @@ export function startScene(canvas, opts = {}) {
         const P = [], C = [], E = [];
         bay.holes.forEach((h, k) => {
             const col = bay.openings[k].color || [1, 0.7, 0.3];
-            for (let i = 0; i < h.length; i++) {
-                const a = h[i], b = h[(i + 1) % h.length];
-                const v = [[a, 0], [b, 0], [b, 1], [a, 0], [b, 1], [a, 1]];
-                for (const [pt, e] of v) { P.push(pt[0], pt[1], 0); C.push(col[0], col[1], col[2]); E.push(e); }
+            let cx = 0, cy = 0;
+            for (const p of h) { cx += p[0]; cy += p[1]; }
+            cx /= h.length; cy /= h.length;
+            for (const sc of [1, 0.55]) {
+                for (let i = 0; i < h.length; i++) {
+                    const a = h[i], b = h[(i + 1) % h.length];
+                    const A = [cx + (a[0] - cx) * sc, cy + (a[1] - cy) * sc];
+                    const B = [cx + (b[0] - cx) * sc, cy + (b[1] - cy) * sc];
+                    const v = [[A, 0], [B, 0], [B, 1], [A, 0], [B, 1], [A, 1]];
+                    for (const [pt, e] of v) { P.push(pt[0], pt[1], 0); C.push(col[0], col[1], col[2]); E.push(e); }
+                }
             }
         });
         const bg = new THREE.BufferGeometry();
@@ -223,11 +231,15 @@ export function startScene(canvas, opts = {}) {
 
         // No wall: only a thin dark lead rim around each opening.
         const stone = new THREE.Group();
-        for (const h of bay.holes) {
-            const sh = toShape(h);
-            const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.03, bevelEnabled: false, curveSegments: 1 });
-            geo.translate(0, 0, -0.015);
-            stone.add(new THREE.Mesh(geo, [capMat, rimMat]));
+        // Soft colored halo on both faces: the glass glowing into the air.
+        const haloTex = new THREE.CanvasTexture(bay.halo);
+        const hm = new THREE.MeshBasicMaterial({ map: haloTex, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide });
+        const hg = new THREE.PlaneGeometry(bay.hw * 2 * bay.pad, bay.top * bay.pad);
+        for (const z of [-0.012]) {
+            const hp = new THREE.Mesh(hg, hm);
+            hp.position.set(0, bay.top / 2, z);
+            hp.renderOrder = 1;
+            stone.add(hp);
         }
         const glass = new THREE.Mesh(glassGeo, glassMat.clone());
         glass.material.uniforms.atlas = { value: atlasTex };
@@ -238,14 +250,14 @@ export function startScene(canvas, opts = {}) {
         g.add(stone, glass);
         g.visible = false;
         group.add(g);
-        return { meta, bay, g, atlasTex, maskTex, uvm, beamGeo: bg };
+        return { meta, bay, g, atlasTex, blurTex, maskTex, uvm, beamGeo: bg };
     });
 
     let index = 0;
     function show(i) {
         wins.forEach((w, k) => { w.g.visible = k === i; });
         const w = wins[i];
-        floorMat.uniforms.atlas.value = w.atlasTex;
+        floorMat.uniforms.atlas.value = w.blurTex;
         floorMat.uniforms.mask.value = w.maskTex;
         floorMat.uniforms.uvm.value = w.uvm;
         beam.geometry = w.beamGeo;
@@ -318,8 +330,8 @@ export function startScene(canvas, opts = {}) {
 
         // Camera fits the window and its pool, on any shape of screen.
         const aspect = W / H;
-        const d = Math.max(1.95 / 0.497, 1.0 / (0.497 * aspect));
-        const target = new THREE.Vector3(-0.02, 0.44, 0.2);
+        const d = Math.max(2.4 / 0.497, 1.0 / (0.497 * aspect));
+        const target = new THREE.Vector3(-0.02, 0.62, 0.15);
         camera.position.set(target.x, target.y + Math.sin(pitch) * d, target.z + Math.cos(pitch) * d);
         camera.lookAt(target);
         renderer.render(scene, camera);
