@@ -144,7 +144,8 @@ export function startFloating(canvas, opts = {}) {
         }
         const w = h * win.aspect;
         const x = (W - w) / 2;
-        const y = H * (compact ? 0.42 : wide ? 0.45 : 0.5) - h * 0.56;
+        const phone = !wide && W / dpr <= 600;
+        const y = H * (compact ? 0.42 : wide ? 0.45 : phone ? 0.45 : 0.5) - h * 0.56;
         return { x, y, w, h };
     }
 
