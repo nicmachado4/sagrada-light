@@ -1,4 +1,5 @@
 import { startFloating } from './floating.js';
+import { startOrbit } from './orbit.js';
 
 const canvas = document.getElementById('scene');
 const dots = document.getElementById('dots');
@@ -8,13 +9,15 @@ const panelList = document.getElementById('panel-list');
 
 let dotsTimer = 0;
 
-const controls = startFloating(canvas, {
+const sceneOpts = {
     onIndex(i) {
         renderDots(i);
         flashDots();
         markPanel(i);
     },
-});
+};
+// 3D orbit when WebGL is there; the flat 2D scene otherwise.
+const controls = startOrbit(canvas, sceneOpts) || startFloating(canvas, sceneOpts);
 
 // Dots: one per window, shown only while moving.
 function renderDots(active) {
