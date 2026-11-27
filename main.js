@@ -14186,64 +14186,71 @@ ${String(e6)}`), new Response(r, { status: 500, headers: { "Content-Type": "text
   var { jsx, jsxs, Fragment: Fragment2 } = hM;
 
   // router.tsx
+  var BASE = (true ? "/sagrada-light" : "").replace(/\/+$/, "");
+  function stripBase(pathname2) {
+    return BASE && pathname2.startsWith(BASE) ? pathname2.slice(BASE.length) || "/" : pathname2;
+  }
+  function withBase(path) {
+    return `${BASE}${path}`;
+  }
   var NavContext = createContext({
     pathname: "/",
     navigate: () => void 0
   });
-  function normalize(pathname) {
-    return pathname.replace(/\/+$/, "") || "/";
+  function normalize(pathname2) {
+    return pathname2.replace(/\/+$/, "") || "/";
   }
-  function isPrefix(base, current) {
-    return base === "/" || current === base || current.startsWith(`${base}/`);
+  function isPrefix(base2, current) {
+    return base2 === "/" || current === base2 || current.startsWith(`${base2}/`);
   }
-  function score(pattern, pathname, end) {
-    const current = normalize(pathname);
+  function score(pattern, pathname2, end) {
+    const current = normalize(pathname2);
     if (pattern === "*") return end ? null : 0;
     const target = normalize(pattern);
     if (target.endsWith("/*")) {
-      const base = normalize(target.slice(0, -2));
-      return isPrefix(base, current) ? 1 + base.split("/").length : null;
+      const base2 = normalize(target.slice(0, -2));
+      return isPrefix(base2, current) ? 1 + base2.split("/").length : null;
     }
     if (target === current) return 1e3;
     return !end && isPrefix(target, current) ? 500 + target.split("/").length : null;
   }
   function FileRouter({ children }) {
-    const [pathname, setPathname] = useState(() => normalize(window.location.pathname));
+    const [pathname2, setPathname] = useState(() => normalize(stripBase(window.location.pathname)));
     useEffect(() => {
-      const onPop = () => setPathname(normalize(window.location.pathname));
+      const onPop = () => setPathname(normalize(stripBase(window.location.pathname)));
       window.addEventListener("popstate", onPop);
       return () => window.removeEventListener("popstate", onPop);
     }, []);
     const navigate = (to2) => {
-      const url = to2 === "/" ? "/" : `${normalize(to2)}/`;
-      if (normalize(window.location.pathname) !== normalize(to2)) {
+      const url = withBase(to2 === "/" ? "/" : `${normalize(to2)}/`);
+      if (normalize(stripBase(window.location.pathname)) !== normalize(to2)) {
         window.history.pushState(null, "", url);
       }
       setPathname(normalize(to2));
       window.scrollTo(0, 0);
     };
-    return /* @__PURE__ */ jsx(NavContext.Provider, { value: { pathname, navigate }, children });
+    return /* @__PURE__ */ jsx(NavContext.Provider, { value: { pathname: pathname2, navigate }, children });
   }
   function useLocation() {
-    const { pathname } = useContext(NavContext);
-    return { pathname, search: "", hash: "" };
+    const { pathname: pathname2 } = useContext(NavContext);
+    return { pathname: pathname2, search: "", hash: "" };
   }
   function Route(_props) {
     return null;
   }
   function Routes({ children }) {
-    const { pathname } = useLocation();
+    const { pathname: pathname2 } = useLocation();
     const routes = react_default.Children.toArray(children).filter(react_default.isValidElement);
     let best;
     for (const route of routes) {
-      const value = route.props.index ? normalize(pathname) === "/" ? 1e3 : null : score(route.props.path ?? "/", pathname, false);
+      const value = route.props.index ? normalize(pathname2) === "/" ? 1e3 : null : score(route.props.path ?? "/", pathname2, false);
       if (value !== null && (!best || value > best.score)) best = { route, score: value };
     }
     return /* @__PURE__ */ jsx(Fragment2, { children: best?.route.props.element ?? null });
   }
   function Link({ to: to2, children, onClick, ...rest }) {
     const { navigate } = useContext(NavContext);
-    const href = to2 === "/" ? "/" : `${normalize(to2)}/`;
+    const href = withBase(to2 === "/" ? "/" : `${normalize(to2)}/`);
     return /* @__PURE__ */ jsx(
       "a",
       {
@@ -14461,13 +14468,13 @@ ${String(e6)}`), new Response(r, { status: 500, headers: { "Content-Type": "text
         }
         if (poly.length < 3) continue;
         const lum = 0.72 + rnd() * 0.62;
-        const base = cellColor(s.y / h, rnd, palette);
+        const base2 = cellColor(s.y / h, rnd, palette);
         const pts = poly.map((p) => ({ x: p.x + (rnd() - 0.5) * 3.2, y: p.y + (rnd() - 0.5) * 3.2 }));
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
         for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
         ctx.closePath();
-        ctx.fillStyle = base.startsWith("#") ? shade(base, lum) : base;
+        ctx.fillStyle = base2.startsWith("#") ? shade(base2, lum) : base2;
         ctx.fill();
         const grad = ctx.createRadialGradient(s.x, s.y, 1, s.x, s.y, cw2 * 0.95);
         grad.addColorStop(0, "rgba(255,255,255,0.10)");
@@ -14557,13 +14564,13 @@ ${String(e6)}`), new Response(r, { status: 500, headers: { "Content-Type": "text
       strip(0, 0, w * 0.12, h)
     ];
   }
-  function makeStoneCanvas(size = 256, base = "#3b3531", jitter = 14, seed = 3) {
+  function makeStoneCanvas(size = 256, base2 = "#3b3531", jitter = 14, seed = 3) {
     const rnd = mulberry(seed);
     const canvas = document.createElement("canvas");
     canvas.width = size;
     canvas.height = size;
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = base;
+    ctx.fillStyle = base2;
     ctx.fillRect(0, 0, size, size);
     const image = ctx.getImageData(0, 0, size, size);
     const data = image.data;
@@ -14678,13 +14685,13 @@ ${String(e6)}`), new Response(r, { status: 500, headers: { "Content-Type": "text
         const a1 = twist + (ci + 1) / cells * Math.PI * 2 + (rnd() - 0.5) * 0.06;
         const t = (rings[ri2] + rings[ri2 + 1]) / 2;
         const colors = band(t);
-        const base = colors[Math.floor(rnd() * colors.length)];
+        const base2 = colors[Math.floor(rnd() * colors.length)];
         const lum = 0.78 + rnd() * 0.5;
         ctx.beginPath();
         ctx.arc(cx2, cy, r1, a02, a1);
         ctx.arc(cx2, cy, Math.max(0.5, r02), a1, a02, true);
         ctx.closePath();
-        ctx.fillStyle = shade(base, lum);
+        ctx.fillStyle = shade(base2, lum);
         ctx.fill();
       }
     }
@@ -15208,12 +15215,12 @@ void main(){
       const verts = [];
       const idx = [];
       const pushQuad = (corners, uvRep, tint) => {
-        const base = verts.length / 8;
+        const base2 = verts.length / 8;
         const uvs = [[0, 0], [uvRep[0], 0], [uvRep[0], uvRep[1]], [0, uvRep[1]]];
         for (let i = 0; i < 4; i++) {
           verts.push(...corners[i], uvs[i][0], uvs[i][1], ...tint);
         }
-        idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+        idx.push(base2, base2 + 1, base2 + 2, base2, base2 + 2, base2 + 3);
       };
       const wall = (axis, at, hA, hB, holes, uvRep, tint) => {
         let pieces = [{ h0: hA, h1: hB, y0: 0, y1: ROOM.y1 }];
@@ -15417,7 +15424,7 @@ void main(){
         for (const ang of [Math.PI / 4, 3 * Math.PI / 4]) {
           const dx2 = Math.cos(ang) * w / 2;
           const dz = Math.sin(ang) * w / 2;
-          const base = colVerts.length / 10;
+          const base2 = colVerts.length / 10;
           const v = (sx2, y, u) => {
             colVerts.push(c.x + dx2 * sx2, y, c.z + dz * sx2, u, y / COLH, c.tint[0], c.tint[1], c.tint[2], c.x, c.z);
           };
@@ -15425,7 +15432,7 @@ void main(){
           v(1, 0.02, 1);
           v(1, COLH, 1);
           v(-1, COLH, 0);
-          colIdx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+          colIdx.push(base2, base2 + 1, base2 + 2, base2, base2 + 2, base2 + 3);
         }
       }
       this.bufCol = gl2.createBuffer();
@@ -16307,11 +16314,11 @@ void main(){
         const floor = !night && def.base ? def.base * transmission : 0;
         return Math.max(s.intensity, floor) * breathe;
       });
-      const base = night ? [0.012, 0.014, 0.03] : [0.03 + 0.055 * dayAmount, 0.028 + 0.049 * dayAmount, 0.026 + 0.041 * dayAmount];
+      const base2 = night ? [0.012, 0.014, 0.03] : [0.03 + 0.055 * dayAmount, 0.028 + 0.049 * dayAmount, 0.026 + 0.041 * dayAmount];
       gl2.useProgram(this.prog);
       gl2.viewport(0, 0, this.canvas.width, this.canvas.height);
       gl2.uniform1f(this.unis.uTime, time);
-      gl2.uniform3fv(this.unis.uBase, base);
+      gl2.uniform3fv(this.unis.uBase, base2);
       gl2.uniform1f(this.unis.uDay, night ? 0 : Math.min(1, dayAmount + 0.15));
       gl2.uniform1f(this.unis.uAspect, this.canvas.width / Math.max(1, this.canvas.height));
       gl2.uniform1fv(this.unis["uInt[0]"], ints);
@@ -16483,7 +16490,9 @@ void main(){
   }
 
   // ../src/main.tsx
-  var initialRoute = decodeURIComponent(window.location.hash.slice(1) || window.location.pathname || "/");
+  var base = (true ? "/sagrada-light" : "").replace(/\/+$/, "");
+  var pathname = base && window.location.pathname.startsWith(base) ? window.location.pathname.slice(base.length) : window.location.pathname;
+  var initialRoute = decodeURIComponent(window.location.hash.slice(1) || pathname || "/");
   if (initialRoute.startsWith("/sim") || initialRoute.startsWith("/field")) {
     document.documentElement.setAttribute("data-instinct-full-screen", "");
   }

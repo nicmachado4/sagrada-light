@@ -1,20 +1,20 @@
 {
   "name": "The light inside Sagrada Família",
   "short_name": "Sagrada Light",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/sagrada-light/",
+  "scope": "/sagrada-light/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b0b10",
   "theme_color": "#0b0b10",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/sagrada-light/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/sagrada-light/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
