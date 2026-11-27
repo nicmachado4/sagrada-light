@@ -17,7 +17,17 @@ const sceneOpts = {
     },
 };
 // 3D orbit when WebGL is there; the flat 2D scene otherwise.
-const controls = startOrbit(canvas, sceneOpts) || startFloating(canvas, sceneOpts);
+let controls = null;
+try {
+    const m = await import('./scene3.js');
+    controls = m.startScene(canvas, sceneOpts);
+} catch (e) { console.error(e); }
+if (!controls) {
+    // three.js missing or no WebGL: use the older scenes.
+    const fresh = canvas.cloneNode(false);
+    canvas.replaceWith(fresh);
+    controls = startOrbit(fresh, sceneOpts) || startFloating(fresh, sceneOpts);
+}
 
 // Dots: one per window, shown only while moving.
 function renderDots(active) {
