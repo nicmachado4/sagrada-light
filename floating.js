@@ -31,7 +31,7 @@ function vivid(c, sat = 1.5, lift = 1.12) {
     ];
 }
 
-function buildWindow(meta) {
+export function buildWindow(meta) {
     let tex;
     let aspect;
     if (meta.kind === 'rose') {
